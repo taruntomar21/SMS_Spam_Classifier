@@ -51,13 +51,6 @@ sms_spam_classifier/
 - Bag-of-Words and TF-IDF with linear models outperformed Word2Vec trained from scratch, which needs far more data than ~5.5k short messages.
 - Spam is the minority class, so **spam recall and precision** matter more than overall accuracy.
 - A linear kernel lets the app show per-word contributions for every prediction.
-> **Note on reported accuracy:** the notebook's tuned TF-IDF cells evaluate some models using the Bag-of-Words model objects, so the printed TF-IDF test accuracies should be recomputed with the TF-IDF models before being quoted as final results. Replace this note with your verified metrics:
->
-> | Metric (test set) | Value |
-> |---|---|
-> | Accuracy | _to be added_ |
-> | Spam precision | _to be added_ |
-> | Spam recall | _to be added_ |
  
 ---
  
