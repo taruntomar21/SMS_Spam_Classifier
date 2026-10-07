@@ -37,6 +37,22 @@ whom why will with won won't wouldn wouldn't y you
 you'd you'll you're you've your yours yourself yourselves
 """.split())
 
+# ---------------------------------------------------------------- styling
+st.markdown(
+    """
+    <style>
+        /* Make the top navigation tabs larger and more prominent */
+        div[data-baseweb="tab-list"] { gap: 0.5rem; }
+        button[data-baseweb="tab"] {
+            font-size: 1.05rem;
+            padding: 0.6rem 1.1rem;
+        }
+        button[data-baseweb="tab"] p { font-size: 1.05rem; font-weight: 600; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ---------------------------------------------------------------- loaders
 @st.cache_resource(show_spinner="Loading model...")
@@ -58,6 +74,7 @@ FEATURES = np.array(vectorizer.get_feature_names_out())
 
 # ---------------------------------------------------------- preprocessing
 def preprocess(text: str) -> str:
+    # NOTE: regex kept exactly as used during training so predictions match.
     words = re.sub("[^a-zA-z]", " ", str(text)).lower().split()
     return " ".join(stemmer.stem(w) for w in words if w not in STOP)
 
@@ -81,7 +98,6 @@ def strength(d):
 
 
 def explain(X_row, top=8):
-    """Words pushing towards spam / ham for one message (linear model)."""
     if COEFS is None:
         return None
     row = X_row.toarray().ravel() if hasattr(X_row, "toarray") else np.asarray(X_row).ravel()
@@ -106,14 +122,24 @@ EXAMPLES = {
 
 with st.sidebar:
     st.title("Spam Shield")
-    page = st.radio("Navigate", ["🔍 Classify a message", "📂 Batch classification",
-                                 "📊 Model & experiments", "📘 About the project"])
-    st.divider()
     st.caption("Model: Linear SVM (C=10)\n\nFeatures: TF-IDF, 1-2 grams, 2,500 terms\n\nData: SMS Spam Collection")
 
-# ------------------------------------------------------------ page: single
-if page.startswith("🔍"):
-    st.title("Spam SMS / Message Classifier")
+# ------------------------------------------------------------ page header
+st.title("Spam SMS Classifier")
+
+# Navigation lives in the upper header as tabs
+tab_single, tab_batch, tab_model, tab_about = st.tabs(
+    [
+        "🔍 Classify a message",
+        "📂 Batch classification",
+        "📊 Model & experiments",
+        "📘 About the project",
+    ]
+)
+
+# ------------------------------------------------------------ tab: single
+with tab_single:
+    st.header("Classify a message")
     st.write("Paste a message and the trained SVM tells you whether it is **Spam** or **Ham** (legitimate).")
 
     if "msg" not in st.session_state:
@@ -166,15 +192,15 @@ if page.startswith("🔍"):
             with st.expander("See the cleaned text the model received"):
                 st.code(cleaned[0] or "(empty)")
 
-# ------------------------------------------------------------- page: batch
-elif page.startswith("📂"):
-    st.title("📂 Batch classification")
+# ------------------------------------------------------------- tab: batch
+with tab_batch:
+    st.header("Batch classification")
     st.write("Upload a CSV with a text column, or paste one message per line.")
 
-    tab_up, tab_paste = st.tabs(["Upload CSV", "Paste messages"])
+    sub_up, sub_paste = st.tabs(["Upload CSV", "Paste messages"])
     texts, source_df = None, None
 
-    with tab_up:
+    with sub_up:
         file = st.file_uploader("CSV file", type=["csv"])
         if file is not None:
             try:
@@ -185,7 +211,7 @@ elif page.startswith("📂"):
             except Exception as e:
                 st.error(f"Could not read the file: {e}")
 
-    with tab_paste:
+    with sub_paste:
         raw = st.text_area("One message per line", height=200)
         if raw.strip() and texts is None:
             texts = [l for l in raw.splitlines() if l.strip()]
@@ -209,9 +235,9 @@ elif page.startswith("📂"):
             st.download_button("⬇️ Download results (CSV)", out.to_csv(index=False).encode("utf-8"),
                                "spam_predictions.csv", "text/csv")
 
-# ----------------------------------------------------------- page: model
-elif page.startswith("📊"):
-    st.title("📊 Model & experiments")
+# ------------------------------------------------------------- tab: model
+with tab_model:
+    st.header("Model & experiments")
     st.write("Three text-representation techniques were tried, each with five classifiers "
              "(baseline, then tuned with GridSearchCV).")
 
@@ -244,9 +270,9 @@ elif page.startswith("📊"):
         r.dataframe(pd.DataFrame({"term": FEATURES[order[::-1][:15]], "weight": COEFS[order[::-1][:15]].round(2)}),
                     hide_index=True)
 
-# ------------------------------------------------------------ page: about
-else:
-    st.title("About the project")
+# ------------------------------------------------------------- tab: about
+with tab_about:
+    st.header("About the project")
     st.markdown("""
 ### Problem
 Unwanted spam messages waste time and carry scams. This project builds a text classifier that labels a
